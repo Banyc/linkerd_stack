@@ -91,4 +91,90 @@ mod tests {
             assert_eq!(resp, Poll::Ready(Ok(req)));
         }
     }
+
+    #[test]
+    fn test_stack_switch() {
+        #[derive(Clone, Debug)]
+        struct PrintService;
+        impl Service<String> for PrintService {
+            type Response = ();
+            type Error = ();
+            type Future = Ready<Result<Self::Response, Self::Error>>;
+            fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+                Poll::Ready(Ok(()))
+            }
+            fn call(&mut self, req: String) -> Self::Future {
+                println!("{}", req);
+                ready(Ok(()))
+            }
+        }
+
+        enum Request {
+            Print(String),
+            Discard,
+        }
+
+        #[derive(Clone, Debug)]
+        struct SwitchService {
+            print: PrintService,
+        }
+        impl Service<Request> for SwitchService {
+            type Response = ();
+            type Error = ();
+            type Future = Ready<Result<Self::Response, Self::Error>>;
+            fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+                Poll::Ready(Ok(()))
+            }
+            fn call(&mut self, req: Request) -> Self::Future {
+                match req {
+                    Request::Print(req) => self.print.call(req),
+                    Request::Discard => ready(Ok(())),
+                }
+            }
+        }
+
+        // Build a stack.
+        let mut service = Stack::new(SwitchService {
+            print: Stack::new(PrintService {}).into_inner(),
+        })
+        .into_inner();
+
+        // Use the service.
+        {
+            let req = Request::Print("hello".to_string());
+
+            // Poll the service.
+            let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
+            assert_eq!(
+                <SwitchService as Service<Request>>::poll_ready(&mut service.clone(), cx),
+                Poll::Ready(Ok(()))
+            );
+
+            // Call the service.
+            let fut = service.call(req);
+            pin_mut!(fut);
+            let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
+            let resp = fut.as_mut().poll(cx);
+            assert_eq!(resp, Poll::Ready(Ok(())));
+        }
+
+        // Use the service.
+        {
+            let req = Request::Discard;
+
+            // Poll the service.
+            let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
+            assert_eq!(
+                <SwitchService as Service<Request>>::poll_ready(&mut service.clone(), cx),
+                Poll::Ready(Ok(()))
+            );
+
+            // Call the service.
+            let fut = service.call(req);
+            pin_mut!(fut);
+            let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
+            let resp = fut.as_mut().poll(cx);
+            assert_eq!(resp, Poll::Ready(Ok(())));
+        }
+    }
 }
