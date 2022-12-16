@@ -146,7 +146,7 @@ mod tests {
             // Poll the service.
             let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
             assert_eq!(
-                <SwitchService as Service<Request>>::poll_ready(&mut service.clone(), cx),
+                <SwitchService as Service<Request>>::poll_ready(&mut service, cx),
                 Poll::Ready(Ok(()))
             );
 
@@ -165,7 +165,7 @@ mod tests {
             // Poll the service.
             let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
             assert_eq!(
-                <SwitchService as Service<Request>>::poll_ready(&mut service.clone(), cx),
+                <SwitchService as Service<Request>>::poll_ready(&mut service, cx),
                 Poll::Ready(Ok(()))
             );
 
