@@ -22,7 +22,7 @@ impl<S> Stack<S> {
     }
 
     /// To restrict the type of the inner service, we can add a bound to the type parameter `S`.
-    pub fn add_bound_clone(self) -> Stack<S>
+    pub fn check_clone(self) -> Stack<S>
     where
         S: Clone,
     {
@@ -67,9 +67,7 @@ mod tests {
         }
 
         // Build a stack of layers.
-        let stack = Stack::new(EchoService {})
-            .push(EmptyLayer {})
-            .add_bound_clone();
+        let stack = Stack::new(EchoService {}).push(EmptyLayer {}).check_clone();
         let mut service: EchoService = stack.into_inner();
 
         // Use the service.
