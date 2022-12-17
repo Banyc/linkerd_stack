@@ -64,22 +64,21 @@ mod tests {
     where
         Req: Trace,
         S: Service<Req, Response = Req>,
-        S::Error: Into<Box<dyn Error + Send + Sync>> + 'static,
         S::Response: 'static,
         S::Future: 'static,
     {
         type Response = S::Response;
-        type Error = Box<dyn Error + Send + Sync>;
+        type Error = S::Error;
         type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
         fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-            self.inner.poll_ready(cx).map_err(Into::into)
+            self.inner.poll_ready(cx)
         }
         fn call(&mut self, mut req: Req) -> Self::Future {
             req.history_mut().push(self.req_mark.clone());
             let fut = self.inner.call(req);
             let resp_mark = self.resp_mark.clone();
             let next = async move {
-                let mut resp = fut.await.map_err(Into::into)?;
+                let mut resp = fut.await?;
                 resp.history_mut().push(resp_mark);
                 Ok(resp)
             };
