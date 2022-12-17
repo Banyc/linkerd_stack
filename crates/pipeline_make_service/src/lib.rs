@@ -1,6 +1,10 @@
 use pipeline_base::Stack;
 use tower::MakeService;
 
+mod on_service;
+
+pub use on_service::{OnService, OnServiceLayer};
+
 pub struct MakeServiceStack<S>(Stack<S>);
 
 impl<S> MakeServiceStack<S> {
