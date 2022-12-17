@@ -205,7 +205,9 @@ mod tests {
     #[test]
     fn test_make() {
         let stack = MakeServiceStack::new(Stack::new(EchoLayer.layer(())));
-        let stack = stack.push_on_service(EchoLayer);
+        let stack = stack
+            .push_on_service(EchoLayer)
+            .check_make::<String, TraceBody>();
         let stack = stack
             .into_inner()
             .push(MakeTraceLayer {
@@ -216,6 +218,9 @@ mod tests {
                 req_mark: "req_2".to_string(),
                 resp_mark: "resp_2".to_string(),
             });
+        let stack = MakeServiceStack::new(stack)
+            .check_make::<String, TraceBody>()
+            .into_inner();
 
         let mut build = stack.into_inner();
 
