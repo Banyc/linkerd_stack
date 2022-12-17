@@ -22,4 +22,11 @@ impl<S> MakeServiceStack<S> {
     {
         self
     }
+
+    pub fn check_make_clone<Tgt, Req>(self) -> Self
+    where
+        S: MakeService<Tgt, Req> + Clone,
+    {
+        self
+    }
 }
