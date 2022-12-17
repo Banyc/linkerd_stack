@@ -58,6 +58,9 @@ where
 }
 
 impl<M> MakeServiceStack<M> {
+    /// The service returned from `layer` only sees the request, ignoring the target metadata.
+    ///
+    /// The target metadata is passed to the inner service.
     pub fn push_on_service<L>(self, layer: L) -> MakeServiceStack<OnService<L, M>>
     where
         L: Clone,
