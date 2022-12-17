@@ -8,3 +8,7 @@ edition = "2021"
 [dependencies]
 pipeline_base = { path = "../pipeline_base" }
 tower = { version = "0.4.13", features = ["make"] }
+
+[dev-dependencies]
+futures = "0.3.25"
+pin-utils = "0.1.0"
