@@ -1,2 +1,6 @@
 [workspace]
-members = ["crates/pipeline_base", "crates/pipeline_new_service"]
+members = [
+    "crates/pipeline_base",
+    "crates/pipeline_new_service",
+    "crates/pipeline_make_service",
+]
