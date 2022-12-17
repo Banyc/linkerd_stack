@@ -31,8 +31,7 @@ impl<S, L: Layer<S>> Layer<S> for Layers<L> {
 #[cfg(test)]
 mod tests {
     use std::{
-        error::Error,
-        fmt::{self, Display, Formatter},
+        convert::Infallible,
         future::{ready, Ready},
         pin::Pin,
         task::{Context, Poll},
@@ -90,7 +89,7 @@ mod tests {
     struct EchoService;
     impl<Req> Service<Req> for EchoService {
         type Response = Req;
-        type Error = Box<EchoError>;
+        type Error = Box<Infallible>;
         type Future = Ready<Result<Self::Response, Self::Error>>;
         fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
             Poll::Ready(Ok(()))
@@ -99,14 +98,6 @@ mod tests {
             ready(Ok(req))
         }
     }
-    #[derive(Debug, PartialEq, Eq)]
-    struct EchoError;
-    impl Display for EchoError {
-        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-            write!(f, "echo error")
-        }
-    }
-    impl Error for EchoError {}
 
     #[test]
     fn test_layers_order() {
