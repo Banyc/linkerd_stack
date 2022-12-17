@@ -1,10 +1,10 @@
 use pipeline_base::Stack;
 
 /// Basically a `tower::MakeService`
-pub trait NewService<T> {
+pub trait NewService<Tgt> {
     type Service;
 
-    fn new_service(&self, target: T) -> Self::Service;
+    fn new_service(&self, target: Tgt) -> Self::Service;
 }
 
 pub struct NewServiceStack<S>(Stack<S>);
@@ -18,9 +18,9 @@ impl<S> NewServiceStack<S> {
         self.0
     }
 
-    pub fn check_new<T>(self) -> Self
+    pub fn check_new<Tgt>(self) -> Self
     where
-        S: NewService<T>,
+        S: NewService<Tgt>,
     {
         self
     }
