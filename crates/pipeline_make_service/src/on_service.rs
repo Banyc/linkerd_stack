@@ -205,9 +205,23 @@ mod tests {
         }
     }
 
+    struct VoidService;
+    impl<Req> Service<Req> for VoidService {
+        type Response = ();
+        type Error = Infallible;
+        type Future = Ready<Result<Self::Response, Self::Error>>;
+        fn poll_ready(&mut self, _: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+        fn call(&mut self, _: Req) -> Self::Future {
+            ready(Ok(()))
+        }
+    }
+
     #[test]
     fn test_make() {
-        let stack = MakeServiceStack::new(Stack::new(EchoLayer.layer(())));
+        let stack = Stack::new(VoidService);
+        let stack = MakeServiceStack::new(stack);
         let stack = stack
             .push_on_service(EchoLayer)
             .check_make::<String, TraceBody>();
