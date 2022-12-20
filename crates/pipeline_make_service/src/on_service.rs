@@ -66,9 +66,7 @@ impl<M> MakeServiceStack<M> {
         L: Clone,
     {
         let on_service_layer = OnServiceLayer::new(layer);
-        let stack = self.into_inner();
-        let stack = stack.push(on_service_layer);
-        MakeServiceStack::new(stack)
+        self.push(on_service_layer)
     }
 }
 
@@ -226,18 +224,17 @@ mod tests {
             .push_on_service(EchoLayer)
             .check_make::<String, TraceBody>();
         let stack = stack
-            .into_inner()
             .push(MakeTraceLayer {
                 req_mark: "req_1".to_string(),
                 resp_mark: "resp_1".to_string(),
             })
+            .check_make::<String, TraceBody>()
             .push(MakeTraceLayer {
                 req_mark: "req_2".to_string(),
                 resp_mark: "resp_2".to_string(),
-            });
-        let stack = MakeServiceStack::new(stack)
-            .check_make::<String, TraceBody>()
-            .into_inner();
+            })
+            .check_make::<String, TraceBody>();
+        let stack = stack.into_inner();
 
         let mut build = stack.into_inner();
 
