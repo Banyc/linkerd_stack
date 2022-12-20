@@ -1,5 +1,5 @@
 use pipeline_base::Stack;
-use tower::{Layer, MakeService};
+use tower::{Layer, MakeService, Service};
 
 mod on_service;
 
@@ -8,8 +8,11 @@ pub use on_service::{OnService, OnServiceLayer};
 pub struct MakeServiceStack<S>(Stack<S>);
 
 impl<S> MakeServiceStack<S> {
-    pub fn new(stack: Stack<S>) -> Self {
-        MakeServiceStack(stack)
+    pub fn new<Tgt>(stack: Stack<S>) -> Self
+    where
+        S: Service<Tgt>,
+    {
+        MakeServiceStack(stack).check()
     }
 
     pub fn into_inner(self) -> Stack<S> {
@@ -20,11 +23,19 @@ impl<S> MakeServiceStack<S> {
     pub fn push<L, Tgt, Req>(self, layer: L) -> MakeServiceStack<L::Service>
     where
         L: Layer<S>,
-        L::Service: MakeService<Tgt, Req>,
+        L::Service: MakeService<Tgt, Req> + Service<Tgt>,
     {
         let stack = self.into_inner();
         let stack = stack.push(layer);
-        MakeServiceStack::new(stack).check_make()
+        MakeServiceStack::new::<Tgt>(stack).check_make()
+    }
+
+    /// Make sure the inner service is a certain `Service`.
+    pub fn check<Tgt>(self) -> Self
+    where
+        S: Service<Tgt>,
+    {
+        self
     }
 
     /// Make sure the inner service is a certain `MakeService`.

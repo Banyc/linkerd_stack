@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn test_make() {
         let stack = Stack::new(VoidService);
-        let stack = MakeServiceStack::new(stack)
+        let stack = MakeServiceStack::new::<String>(stack)
             .push_on_service::<_, String, TraceBody>(EchoLayer)
             .push::<_, String, TraceBody>(MakeTraceLayer {
                 req_mark: "req_1".to_string(),
