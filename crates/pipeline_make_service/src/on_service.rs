@@ -232,21 +232,19 @@ mod tests {
                 req_mark: "req_2".to_string(),
                 resp_mark: "resp_2".to_string(),
             });
-        let stack = stack.into_inner();
-
-        let mut build = stack.into_inner();
+        let mut make = stack.into_inner().into_inner();
 
         let target = "target".to_string();
 
-        // Poll the build pipeline.
+        // Poll the make pipeline.
         let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
-        let poll_ready = tower::MakeService::<String, TraceBody>::poll_ready(&mut build, cx);
+        let poll_ready = tower::MakeService::<String, TraceBody>::poll_ready(&mut make, cx);
         let Poll::Ready(Ok(())) = poll_ready else {
             panic!("poll_ready failed");
         };
 
-        // Call the build pipeline.
-        let fut = build.call(target.clone());
+        // Call the make pipeline.
+        let fut = make.call(target.clone());
         pin_mut!(fut);
         let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
         let Poll::Ready(Ok(mut svc)) = fut.as_mut().poll(cx) else {
