@@ -17,13 +17,14 @@ impl<S> MakeServiceStack<S> {
     }
 
     /// Push an outer layer onto the stack.
-    pub fn push<L>(self, layer: L) -> MakeServiceStack<L::Service>
+    pub fn push<L, Tgt, Req>(self, layer: L) -> MakeServiceStack<L::Service>
     where
         L: Layer<S>,
+        L::Service: MakeService<Tgt, Req>,
     {
         let stack = self.into_inner();
         let stack = stack.push(layer);
-        MakeServiceStack::new(stack)
+        MakeServiceStack::new(stack).check_make()
     }
 
     /// Make sure the inner service is a certain `MakeService`.

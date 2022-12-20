@@ -61,12 +61,15 @@ impl<M> MakeServiceStack<M> {
     /// The service returned from `layer` only sees the request, ignoring the target metadata.
     ///
     /// The target metadata is passed to the inner service.
-    pub fn push_on_service<L>(self, layer: L) -> MakeServiceStack<OnService<L, M>>
+    pub fn push_on_service<L, Tgt, Req>(self, layer: L) -> MakeServiceStack<OnService<L, M>>
     where
-        L: Clone,
+        L: Layer<M::Response> + Clone + 'static,
+        L::Service: Service<Req>,
+        M: Service<Tgt>,
+        M::Future: 'static,
     {
         let on_service_layer = OnServiceLayer::new(layer);
-        self.push(on_service_layer)
+        self.push::<_, Tgt, Req>(on_service_layer)
     }
 }
 
@@ -220,20 +223,16 @@ mod tests {
     fn test_make() {
         let stack = Stack::new(VoidService);
         let stack = MakeServiceStack::new(stack);
+        let stack = stack.push_on_service::<_, String, TraceBody>(EchoLayer);
         let stack = stack
-            .push_on_service(EchoLayer)
-            .check_make::<String, TraceBody>();
-        let stack = stack
-            .push(MakeTraceLayer {
+            .push::<_, String, TraceBody>(MakeTraceLayer {
                 req_mark: "req_1".to_string(),
                 resp_mark: "resp_1".to_string(),
             })
-            .check_make::<String, TraceBody>()
-            .push(MakeTraceLayer {
+            .push::<_, String, TraceBody>(MakeTraceLayer {
                 req_mark: "req_2".to_string(),
                 resp_mark: "resp_2".to_string(),
-            })
-            .check_make::<String, TraceBody>();
+            });
         let stack = stack.into_inner();
 
         let mut build = stack.into_inner();
@@ -242,7 +241,7 @@ mod tests {
 
         // Poll the build pipeline.
         let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
-        let poll_ready = build.poll_ready(cx);
+        let poll_ready = tower::MakeService::<String, TraceBody>::poll_ready(&mut build, cx);
         let Poll::Ready(Ok(())) = poll_ready else {
             panic!("poll_ready failed");
         };
