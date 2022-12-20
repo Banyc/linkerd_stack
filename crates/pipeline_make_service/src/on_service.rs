@@ -61,7 +61,7 @@ impl<M> MakeServiceStack<M> {
     /// The service returned from `layer` only sees the request, ignoring the target metadata.
     ///
     /// The target metadata is passed to the inner service.
-    pub fn push_on_service<L, Tgt, Req>(self, layer: L) -> MakeServiceStack<OnService<L, M>>
+    pub fn push_on_service<Tgt, Req, L>(self, layer: L) -> MakeServiceStack<OnService<L, M>>
     where
         L: Layer<M::Response> + Clone + 'static,
         L::Service: Service<Req>,
@@ -69,7 +69,7 @@ impl<M> MakeServiceStack<M> {
         M::Future: 'static,
     {
         let on_service_layer = OnServiceLayer::new(layer);
-        self.push::<_, Tgt, Req>(on_service_layer)
+        self.push::<Tgt, Req, _>(on_service_layer)
     }
 }
 
@@ -223,12 +223,12 @@ mod tests {
     fn test_make() {
         let stack = Stack::new(VoidService);
         let stack = MakeServiceStack::new::<String>(stack)
-            .push_on_service::<_, String, TraceBody>(EchoLayer)
-            .push::<_, String, TraceBody>(MakeTraceLayer {
+            .push_on_service::<String, TraceBody, _>(EchoLayer)
+            .push::<String, TraceBody, _>(MakeTraceLayer {
                 req_mark: "req_1".to_string(),
                 resp_mark: "resp_1".to_string(),
             })
-            .push::<_, String, TraceBody>(MakeTraceLayer {
+            .push::<String, TraceBody, _>(MakeTraceLayer {
                 req_mark: "req_2".to_string(),
                 resp_mark: "resp_2".to_string(),
             });

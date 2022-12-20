@@ -20,7 +20,7 @@ impl<S> MakeServiceStack<S> {
     }
 
     /// Push an outer layer onto the stack.
-    pub fn push<L, Tgt, Req>(self, layer: L) -> MakeServiceStack<L::Service>
+    pub fn push<Tgt, Req, L>(self, layer: L) -> MakeServiceStack<L::Service>
     where
         L: Layer<S>,
         L::Service: MakeService<Tgt, Req> + Service<Tgt>,
