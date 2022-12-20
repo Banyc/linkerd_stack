@@ -6,14 +6,14 @@ mod on_service;
 pub use on_service::{OnService, OnServiceLayer};
 
 /// `M`: a thing that makes services
-pub struct MakeServiceStack<M>(Stack<M>);
+pub struct MakeStack<M>(Stack<M>);
 
-impl<M> MakeServiceStack<M> {
+impl<M> MakeStack<M> {
     pub fn new<Tgt>(stack: Stack<M>) -> Self
     where
         M: Service<Tgt>,
     {
-        MakeServiceStack(stack).check()
+        MakeStack(stack).check()
     }
 
     pub fn into_inner(self) -> Stack<M> {
@@ -21,14 +21,14 @@ impl<M> MakeServiceStack<M> {
     }
 
     /// Push an outer layer onto the stack.
-    pub fn push<Tgt, Req, L>(self, layer: L) -> MakeServiceStack<L::Service>
+    pub fn push<Tgt, Req, L>(self, layer: L) -> MakeStack<L::Service>
     where
         L: Layer<M>,
         L::Service: MakeService<Tgt, Req> + Service<Tgt>,
     {
         let stack = self.into_inner();
         let stack = stack.push(layer);
-        MakeServiceStack::new::<Tgt>(stack).check_make()
+        MakeStack::new::<Tgt>(stack).check_make()
     }
 
     /// Make sure the inner service is a certain `Service`.

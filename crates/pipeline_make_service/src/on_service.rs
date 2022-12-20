@@ -6,7 +6,7 @@ use std::{
 
 use tower::{Layer, Service};
 
-use crate::MakeServiceStack;
+use crate::MakeStack;
 
 /// `M`: a thing that makes services
 #[derive(Clone, Debug)]
@@ -57,11 +57,11 @@ where
     }
 }
 
-impl<M> MakeServiceStack<M> {
+impl<M> MakeStack<M> {
     /// The service returned from `layer` only sees the request, ignoring the target metadata.
     ///
     /// The target metadata is passed to the inner service.
-    pub fn push_on_service<Tgt, Req, L>(self, layer: L) -> MakeServiceStack<OnService<L, M>>
+    pub fn push_on_service<Tgt, Req, L>(self, layer: L) -> MakeStack<OnService<L, M>>
     where
         L: Layer<M::Response> + Clone + 'static,
         L::Service: Service<Req>,
@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn test_make() {
         let stack = Stack::new(VoidService);
-        let stack = MakeServiceStack::new::<String>(stack)
+        let make_stack = MakeStack::new::<String>(stack)
             .push_on_service::<String, TraceBody, _>(EchoLayer)
             .push::<String, TraceBody, _>(MakeTraceLayer {
                 req_mark: "req_1".to_string(),
@@ -232,19 +232,19 @@ mod tests {
                 req_mark: "req_2".to_string(),
                 resp_mark: "resp_2".to_string(),
             });
-        let mut make = stack.into_inner().into_inner();
+        let mut make_svc = make_stack.into_inner().into_inner();
 
         let target = "target".to_string();
 
         // Poll the make pipeline.
         let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
-        let poll_ready = tower::MakeService::<String, TraceBody>::poll_ready(&mut make, cx);
+        let poll_ready = tower::MakeService::<String, TraceBody>::poll_ready(&mut make_svc, cx);
         let Poll::Ready(Ok(())) = poll_ready else {
             panic!("poll_ready failed");
         };
 
         // Call the make pipeline.
-        let fut = make.call(target.clone());
+        let fut = make_svc.call(target.clone());
         pin_mut!(fut);
         let cx = &mut Context::from_waker(futures::task::noop_waker_ref());
         let Poll::Ready(Ok(mut svc)) = fut.as_mut().poll(cx) else {
