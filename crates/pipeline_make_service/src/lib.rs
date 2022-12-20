@@ -9,6 +9,9 @@ pub use on_service::{OnService, OnServiceLayer};
 pub struct MakeStack<M>(Stack<M>);
 
 impl<M> MakeStack<M> {
+    /// Create a new `MakeStack`.
+    ///
+    /// `Tgt`: the input type of the inner service
     pub fn new<Tgt>(stack: Stack<M>) -> Self
     where
         M: Service<Tgt>,
@@ -21,6 +24,10 @@ impl<M> MakeStack<M> {
     }
 
     /// Push an outer layer onto the stack.
+    ///
+    /// `Tgt`: the target type after the layer is applied
+    ///
+    /// `Req`: the request type after the layer is applied
     pub fn push<Tgt, Req, L>(self, layer: L) -> MakeStack<L::Service>
     where
         L: Layer<M>,
